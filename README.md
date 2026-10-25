@@ -26,7 +26,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 例は [examples/](examples/)（[逆断層](examples/thrust.png)・[正断層](examples/normal.png)・[左横ずれ](examples/strike_left.png)・[右横ずれ](examples/strike_right.png)・[斜めずれ](examples/oblique.png)）。
 
 動作確認ノートブック: [notebooks/01_decoder_tour.ipynb](notebooks/01_decoder_tour.ipynb)
-（数式・震源球・ブロック図・地表マップの確認と、スライダーで走向・傾斜・すべり角を動かす試験。カーネルは `.venv` を選ぶ。出力は消してコミットしている）
+（実行結果をそのまま載せた [notebooks/README.md](notebooks/README.md) もある。数式・震源球・ブロック図・地表マップの確認と、スライダーで走向・傾斜・すべり角を動かす試験。カーネルは `.venv` を選ぶ。出力は消してコミットしている）
 
 平面・お椀・球面全体の3つを並べた図は、`--trio out_trio.png`（`--elev` で見る高さ。既定30°）で出力する。
 例: [逆断層](examples/thrust_trio.png)・[正断層](examples/normal_trio.png)・[左横ずれ](examples/strike_left_trio.png)

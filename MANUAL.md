@@ -36,6 +36,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 `notebooks/01_decoder_tour.ipynb`（カーネル: `beachball_decoder (.venv)`。未登録なら `.venv/bin/python -m ipykernel install --user --name beachball_decoder`）。
 1準備 / 2数式（obspy照合）/ 3震源球5種 + obspy画素照合 / 4ブロック図 + 切断の数値チェック / 5地表マップ / 6全部入り / 7スライダー / 8モーメントテンソル入力。
 全セル実行で確認済み（照合は5種すべて一致）。出力は消してコミットする。
+実行結果（文字の出力は原文のまま、図は `notebooks/images/` に書き出し）は [notebooks/README.md](notebooks/README.md) に載せている。ノートブックを更新したら、全セル実行して README と画像を作り直す（スライダー付きセルは初期状態を載せる）。
 
 ## コード構成
 - `beachball_decoder/fault.py`: 断層パラメータ ⇄ モーメントテンソル ⇄ 節面・P/T軸、断層タイプ判定（NED座標）
