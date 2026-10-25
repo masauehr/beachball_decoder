@@ -18,6 +18,9 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 出力は1枚の画像: 震源球 / 節面Aが断層面の場合のブロック図 / 節面Bの場合のブロック図 / 地表の初動マップ / 解説文。
 例は [examples/](examples/)（[逆断層](examples/thrust.png)・[正断層](examples/normal.png)・[左横ずれ](examples/strike_left.png)・[右横ずれ](examples/strike_right.png)・[斜めずれ](examples/oblique.png)）。
 
+動作確認ノートブック: [notebooks/01_decoder_tour.ipynb](notebooks/01_decoder_tour.ipynb)
+（数式・震源球・ブロック図・地表マップの確認と、スライダーで走向・傾斜・すべり角を動かす試験。カーネルは `.venv` を選ぶ。出力は消してコミットしている）
+
 テスト（開発用）: `.venv/bin/pip install -r requirements-dev.txt && .venv/bin/python -m pytest tests`
 
 ## 実装状況

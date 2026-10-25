@@ -16,6 +16,11 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 ```
 システムの python3 は brew 更新で 3.14 になり matplotlib が無いので、専用 `.venv` を使う。
 
+## 動作確認ノートブック
+`notebooks/01_decoder_tour.ipynb`（カーネル: `beachball_decoder (.venv)`。未登録なら `.venv/bin/python -m ipykernel install --user --name beachball_decoder`）。
+1準備 / 2数式（obspy照合）/ 3震源球5種 + obspy画素照合 / 4ブロック図 + 切断の数値チェック / 5地表マップ / 6全部入り / 7スライダー / 8モーメントテンソル入力。
+全セル実行で確認済み（照合は5種すべて一致）。出力は消してコミットする。
+
 ## コード構成
 - `beachball_decoder/fault.py`: 断層パラメータ ⇄ モーメントテンソル ⇄ 節面・P/T軸、断層タイプ判定（NED座標）
 - `beachball_decoder/render.py`: 震源球・ブロック図・地表マップ・解説文・合成
