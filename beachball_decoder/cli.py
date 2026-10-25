@@ -4,7 +4,7 @@ import argparse
 import sys
 
 from .fault import from_mt_use, from_sdr
-from .render import render_decoded
+from .render import render_decoded, render_trio
 
 # 代表的な断層（走向, 傾斜, すべり角）
 PRESETS = {
@@ -25,6 +25,8 @@ def build_parser():
                    help="モーメントテンソル（GCMT/USGS形式: r=上, t=南, p=東）")
     p.add_argument("--preset", choices=sorted(PRESETS), help="代表的な断層の例")
     p.add_argument("-o", "--output", default="decoded.png", help="出力画像のパス（既定: decoded.png）")
+    p.add_argument("--trio", metavar="PATH", help="平面・下半球のお椀・球面全体の3つを並べた図も、このパスに出力する")
+    p.add_argument("--elev", type=float, default=30.0, help="--trio の見る高さ（度, 既定30）")
     p.add_argument("--dpi", type=int, default=150)
     p.add_argument("--title", help="図の題名")
     return p
@@ -53,6 +55,9 @@ def main(argv=None):
         return 2
     render_decoded(mech, args.output, dpi=args.dpi, title=args.title)
     print(f"{args.output} を出力しました（{mech.fault_type[0]}）")
+    if args.trio:
+        render_trio(mech, args.trio, elev=args.elev, dpi=args.dpi)
+        print(f"{args.trio} を出力しました（平面・お椀・球面）")
     return 0
 
 

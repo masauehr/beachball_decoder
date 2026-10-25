@@ -183,6 +183,111 @@ def draw_hemisphere(ax, mech: Mechanism, elev=38.0, azim=-90.0, inside=True):
                  fontsize=12)
 
 
+def draw_sphere(ax, mech: Mechanism, elev=30.0, azim=-90.0):
+    """震源球の全球（上半球も含む）を外側から見た立体図。
+
+    下半球が平らな震源球に使われる部分。上半球は下半球と点対称の同じ模様になるので、薄く表示して区別する。
+    黒=押し、白=引き。赤線は節面（球を一周する大円）、青丸は P軸・T軸（球の反対側にも同じ軸がある）。
+    """
+    from .fault import _sdr_to_nd
+
+    toward = _toward_viewer(elev, azim)
+    na, nt = 144, 72
+    az_e = np.linspace(0, 2 * np.pi, na + 1)
+    th_e = np.linspace(0, np.pi, nt + 1)
+    polys, colors = [], []
+    for j in range(nt):
+        for i in range(na):
+            a0, a1 = az_e[i], az_e[i + 1]
+            t0, t1 = th_e[j], th_e[j + 1]
+            ac, tc = (a0 + a1) / 2, (t0 + t1) / 2
+            radial = np.array(_sphere_xyz(ac, tc))
+            if np.dot(radial, toward) <= 0:
+                continue
+            pts = [_sphere_xyz(a0, t0), _sphere_xyz(a1, t0), _sphere_xyz(a1, t1), _sphere_xyz(a0, t1)]
+            polys.append(np.array(pts))
+            light = 0.78 + 0.22 * np.dot(radial, toward)
+            base = 0.12 if _pressure(mech.moment, ac, tc) > 0 else 0.96
+            g = base * light if base < 0.5 else 1.0 - (1.0 - base) - 0.2 * (1 - light) * 2
+            if tc > np.pi / 2:  # 上半球は白寄りに薄くする
+                g = g + (0.86 - g) * 0.55
+            colors.append((g, g, g))
+    ax.computed_zorder = False
+    ax.add_collection3d(Poly3DCollection(polys, facecolors=colors, edgecolors=colors, linewidths=0.4, zorder=1))
+
+    def visible_segments(xyz):
+        vis = xyz @ toward > 0
+        idx = np.where(vis)[0]
+        return np.split(idx, np.where(np.diff(idx) > 1)[0] + 1) if len(idx) else []
+
+    # 経線・緯線
+    tt = np.linspace(0, np.pi, 90)
+    aa = np.linspace(0, 2 * np.pi, 200)
+    lines = [(np.full_like(tt, a), tt) for a in np.radians(np.arange(0, 360, 30))]
+    lines += [(aa, np.full_like(aa, t)) for t in np.radians((30, 60, 120, 150))]
+    for a_arr, t_arr in lines:
+        xyz = np.stack(_sphere_xyz(a_arr, t_arr, 1.003), axis=1)
+        for seg in visible_segments(xyz):
+            ax.plot(xyz[seg, 0], xyz[seg, 1], xyz[seg, 2], color="#888888", lw=0.5, alpha=0.7, zorder=3)
+    # 赤道（下半球と上半球の境目）
+    eq = np.stack([np.sin(aa), np.cos(aa), 0 * aa], axis=1) * 1.005
+    for seg in visible_segments(eq):
+        ax.plot(eq[seg, 0], eq[seg, 1], eq[seg, 2], color="k", lw=2.2, zorder=5)
+    # 節面（大円）
+    for plane in (mech.plane_a, mech.plane_b):
+        n_ned, _ = _sdr_to_nd(*plane)
+        u = np.cross(n_ned, [0, 0, 1.0])
+        if np.linalg.norm(u) < 1e-9:
+            u = np.array([1.0, 0, 0])
+        u /= np.linalg.norm(u)
+        v = np.cross(n_ned, u)
+        t_ = np.linspace(0, 2 * np.pi, 721)
+        g = np.outer(np.cos(t_), u) + np.outer(np.sin(t_), v)
+        xyz = np.stack([g[:, 1], g[:, 0], -g[:, 2]], axis=1) * 1.006
+        for seg in visible_segments(xyz):
+            ax.plot(xyz[seg, 0], xyz[seg, 1], xyz[seg, 2], color="#c0392b", lw=3, zorder=6)
+    # P軸・T軸（両端）
+    for name, (trend, plunge), fc in (("P", mech.p_axis, "white"), ("T", mech.t_axis, "#222222")):
+        base = np.array(_sphere_xyz(np.radians(trend), np.radians(90.0 - plunge)))
+        for pos in (base * 1.01, -base * 1.01):
+            if pos @ toward > 0:
+                ax.scatter(*pos, s=420, c=fc, edgecolors="#2e86c1", linewidths=2.5, zorder=8, depthshade=False)
+                ax.text(*pos, name, color="#2e86c1", ha="center", va="center", fontsize=10, fontweight="bold",
+                        zorder=9)
+    for label, (x, y, z) in (("N", (0, 1.2, 0.1)), ("E", (1.2, 0, 0.1)), ("S", (0, -1.2, 0.1)),
+                             ("W", (-1.2, 0, 0.1)), ("上", (0, 0, 1.2)), ("下", (0, 0, -1.2))):
+        if np.dot([x, y, z], toward) > -0.35:  # 球の裏側に回った方位は、球面の上に重なるので出さない
+            ax.text(x, y, z, label, ha="center", va="center", fontsize=12, fontweight="bold", zorder=9)
+    ax.set_xlim(-1.05, 1.05)
+    ax.set_ylim(-1.05, 1.05)
+    ax.set_zlim(-1.05, 1.05)
+    ax.set_box_aspect((1, 1, 1), zoom=1.15)
+    ax.view_init(elev=elev, azim=azim)
+    ax.set_axis_off()
+    ax.set_title("震源球の全体（球面）。濃い下半分が平らな図になる", fontsize=12)
+
+
+def render_trio(mech: Mechanism, path, elev=30.0, azim=-90.0, dpi=130):
+    """平らな震源球・下半球のお椀（斜め上から）・球面全体、の3つを並べた図。"""
+    setup_font()
+    fig = plt.figure(figsize=(21, 7.4), facecolor="white")
+    ax1 = fig.add_subplot(1, 3, 1)
+    draw_beachball(ax1, mech)
+    ax1.set_title("① 平らな震源球（下半球を真上から）", fontsize=13)
+    ax2 = fig.add_subplot(1, 3, 2, projection="3d")
+    draw_hemisphere(ax2, mech, elev=elev, azim=azim)
+    ax2.set_title(f"② 下半球を斜め上（{elev:.0f}°）からのぞく", fontsize=13)
+    ax3 = fig.add_subplot(1, 3, 3, projection="3d")
+    draw_sphere(ax3, mech, elev=elev, azim=azim)
+    ax3.set_title(f"③ 球面の全体（{elev:.0f}° 斜め上から。薄い側が上半球）", fontsize=13)
+    name, _ = mech.fault_type
+    fig.suptitle(f"震源球の見え方: 平面 → お椀 → 球  （{name}）", fontsize=17, fontweight="bold")
+    fig.subplots_adjust(left=0.01, right=0.99, top=0.88, bottom=0.02, wspace=0.03)
+    fig.savefig(path, dpi=dpi)
+    plt.close(fig)
+    return path
+
+
 # ---- 断層ブロック図 -------------------------------------------------------
 
 def _clip(poly, normal, offset):

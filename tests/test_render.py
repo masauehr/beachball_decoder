@@ -99,3 +99,23 @@ def test_立体図は見えている側の面だけを描く():
     coll = ax.collections[0]
     plt.close(fig)
     assert 0 < len(coll.get_facecolor()) < 144 * 45
+
+
+def test_球面全体の立体図が描ける():
+    fig = plt.figure(figsize=(4, 4))
+    ax = fig.add_subplot(1, 1, 1, projection="3d")
+    render.draw_sphere(ax, fault.from_sdr(30, 45, 90), elev=30.0)
+    coll = ax.collections[0]
+    fig.canvas.draw()
+    plt.close(fig)
+    # 外側から見えるのは全球のおよそ半分
+    assert 0.3 * 144 * 72 < len(coll.get_facecolor()) < 0.7 * 144 * 72
+
+
+def test_3つ並べた図が出力される(tmp_path):
+    out = tmp_path / "t.png"
+    render.render_trio(fault.from_sdr(30, 45, 90), out, dpi=40)
+    assert out.stat().st_size > 5000
+    assert cli.main(["--preset", "normal", "-o", str(tmp_path / "a.png"), "--trio", str(tmp_path / "b.png"),
+                     "--dpi", "40"]) == 0
+    assert (tmp_path / "b.png").exists()
