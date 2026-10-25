@@ -4,9 +4,14 @@
 
 詳しくは [MANUAL.md](MANUAL.md) を参照。
 
-> 状態: Phase 0〜2 実装済み（2026-10-25）。Webアプリ化（Phase 3）以降は未着手。
+> 状態: Phase 0〜3 実装済み（2026-10-25）。ブラウザ版は [web/](web/)。公開カタログ連携（Phase 4）以降は未着手。
 
 ## 使い方
+
+### ブラウザ版（ドラッグで回せる）
+[web/index.html](web/index.html) をブラウザで開く（サーバー不要・外部ライブラリなし）。走向・傾斜・すべり角のスライダーで、平らな震源球・お椀・球面・断層ブロック（節面A/B）・地表の初動マップが連動して変わる。3Dの図はドラッグ（タッチ・矢印キーも可）で回転。詳しくは [web/README.md](web/README.md)。
+
+### Python 版（画像・ノートブック）
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回のみ
@@ -33,7 +38,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 | 0 数式（走向・傾斜・すべり角 ⇄ モーメントテンソル ⇄ 節面・P/T軸） | 済（`beachball_decoder/fault.py`・obspy と照合） |
 | 1 震源球の描画 | 済（下半球・等面積投影。obspy の描画と画素で照合） |
 | 2 ブロック図・地表の初動マップ・下半球の立体表示 | 済（ブロック図の見やすさは改善の余地あり） |
-| 3 3D回転球・Webアプリ化 | 未着手 |
+| 3 3D回転球・Webアプリ化 | 済（`web/`・Vanilla JS + Canvas 2D。Python版と同じ式で、`node --test web/test` で照合） |
 | 4 公開カタログ連携 | 未着手 |
 | 5 画像入力 | 未着手 |
 
@@ -102,7 +107,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 |----|------|------|
 | 計算 | Python 3.x（NumPy） | 変換式の実装と検証。ObsPy は照合用 |
 | 可視化（静止画） | matplotlib | 図の書き出し・Notebook での検証 |
-| 可視化（対話） | Vanilla JS + Three.js（または WebGL） | 3D回転・アニメーション。フレームワーク不使用の方針に沿う |
+| 可視化（対話） | Vanilla JS + Canvas 2D（実装済み） | 3D回転・アニメーション。外部ライブラリなしで自前の直交投影。Three.js は採用せず |
 | 公開 | GitHub Pages（静的） | サーバー不要で配布しやすい |
 
 ## 開発フェーズ（案）

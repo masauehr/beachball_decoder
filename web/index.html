@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>震源球デコーダー</title>
+<meta name="description" content="地震の震源球（ビーチボール図）を、お椀・球面・断層ブロック・地表の動きとして立体的に読み解く">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>震源球デコーダー</h1>
+  <p>地震の「震源球（ビーチボール図）」を、<b>お椀・球面・断層ブロック・地表の動き</b>に置き換えて読み解きます。3Dの図は<b>ドラッグで回せます</b>。</p>
+</header>
+
+<main>
+  <section class="panel controls" aria-label="断層の設定">
+    <div class="row">
+      <label for="strike">走向<small>（北から時計回り）</small></label>
+      <input id="strike" type="range" min="0" max="359" step="1">
+      <input id="strikeN" type="number" min="0" max="359" step="1" aria-label="走向（度）">
+    </div>
+    <div class="row">
+      <label for="dip">傾斜<small>（水平から）</small></label>
+      <input id="dip" type="range" min="0" max="90" step="1">
+      <input id="dipN" type="number" min="0" max="90" step="1" aria-label="傾斜（度）">
+    </div>
+    <div class="row">
+      <label for="rake">すべり角<small>（90=逆, -90=正, 0=左, 180=右）</small></label>
+      <input id="rake" type="range" min="-180" max="180" step="1">
+      <input id="rakeN" type="number" min="-180" max="180" step="1" aria-label="すべり角（度）">
+    </div>
+    <div class="presets" role="group" aria-label="代表例">
+      <span>代表例:</span>
+      <button data-preset="thrust">逆断層</button>
+      <button data-preset="normal">正断層</button>
+      <button data-preset="strike_left">左横ずれ</button>
+      <button data-preset="strike_right">右横ずれ</button>
+      <button data-preset="oblique">斜めずれ</button>
+    </div>
+    <details>
+      <summary>モーメントテンソルから入力する（GCMT・USGS形式）</summary>
+      <p class="note">Mrr Mtt Mpp Mrt Mrp Mtp（r=上, t=南, p=東）。二重couple以外の成分（CLVD・等方）は無視し、最も近い二重couple成分を使います。</p>
+      <div class="mt" id="mtFields"></div>
+      <button id="mtApply">この値で表示</button>
+      <span id="mtMsg" class="note" role="status"></span>
+    </details>
+  </section>
+
+  <section class="verdict panel" id="verdict" aria-live="polite">
+    <h2 id="vTitle"></h2>
+    <p id="vExplain"></p>
+  </section>
+
+  <section class="grid" aria-label="図">
+    <figure class="card">
+      <figcaption>① 平らな震源球<small>下半球を真上から見た円</small></figcaption>
+      <canvas id="cFlat"></canvas>
+    </figure>
+    <figure class="card">
+      <figcaption>② 下半球のお椀<small>ドラッグで回転（上から見ると内側、下からは外側）</small></figcaption>
+      <canvas id="cBowl" class="drag"></canvas>
+    </figure>
+    <figure class="card">
+      <figcaption>③ 球面の全体<small>薄い側が上半球（下半球と点対称の同じ模様）</small></figcaption>
+      <canvas id="cSphere" class="drag"></canvas>
+    </figure>
+    <figure class="card">
+      <figcaption>④ 節面Aが断層面なら<small>橙=上盤・青=下盤。ドラッグで回転</small></figcaption>
+      <canvas id="cBlockA" class="drag"></canvas>
+    </figure>
+    <figure class="card">
+      <figcaption>⑤ 節面Bが断層面なら<small>橙=上盤・青=下盤。ドラッグで回転</small></figcaption>
+      <canvas id="cBlockB" class="drag"></canvas>
+    </figure>
+    <figure class="card">
+      <figcaption>⑥ 地表の初動マップ<small>赤=上向き（押し）・青=下向き（引き）。震源の真上から</small></figcaption>
+      <canvas id="cMap"></canvas>
+    </figure>
+  </section>
+  <div class="viewctl">
+    <button id="resetView">お椀・球面の視点を戻す</button>
+    <span class="note">②③は同じ視点で連動します。</span>
+  </div>
+
+  <section class="panel details" aria-label="数値と読み方">
+    <h2>数値</h2>
+    <dl>
+      <dt>節面A</dt><dd id="vPlaneA"></dd>
+      <dt>節面B</dt><dd id="vPlaneB"></dd>
+      <dt>P軸</dt><dd id="vP"></dd>
+      <dt>T軸</dt><dd id="vT"></dd>
+    </dl>
+    <h2>読み方</h2>
+    <ul>
+      <li>黒＝初動が「押し」（震源から遠ざかる向きに地面が動く）、白＝「引き」。</li>
+      <li>黒い領域の中心付近に <b>T軸</b>、白い領域の中心付近に <b>P軸</b> がある（名前と色が逆で紛らわしい）。</li>
+      <li>赤線は2本の節面。実際の断層面は A か B の一方で、<b>地震波の初動だけでは決められません</b>（余震の並び・地表の断層・津波・地殻変動などと突き合わせて判断します）。</li>
+      <li>平らな震源球は「球の下半分（お椀）を真上から見た図」。②で斜めから、③で球全体として見られます。</li>
+    </ul>
+  </section>
+</main>
+
+<footer>
+  <p>震源球デコーダー — 計算は Python 版（<code>beachball_decoder/fault.py</code>）と同じ式で、結果を自動テストで照合しています。</p>
+</footer>
+
+<script src="js/fault.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
