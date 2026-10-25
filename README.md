@@ -4,7 +4,32 @@
 
 詳しくは [MANUAL.md](MANUAL.md) を参照。
 
-> 状態: 企画段階（2026-10-25 作成）。コードは未着手。
+> 状態: Phase 0〜2 実装済み（2026-10-25）。Webアプリ化（Phase 3）以降は未着手。
+
+## 使い方
+
+```bash
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回のみ
+.venv/bin/python -m beachball_decoder --preset thrust -o out.png      # 代表例（thrust/normal/strike_left/strike_right/oblique）
+.venv/bin/python -m beachball_decoder --strike 30 --dip 45 --rake 90 -o out.png
+.venv/bin/python -m beachball_decoder --mt 1.7 -0.3 -1.4 0.5 -0.2 0.9 -o out.png   # Mrr Mtt Mpp Mrt Mrp Mtp（GCMT/USGS形式）
+```
+
+出力は1枚の画像: 震源球 / 節面Aが断層面の場合のブロック図 / 節面Bの場合のブロック図 / 地表の初動マップ / 解説文。
+例は [examples/](examples/)（[逆断層](examples/thrust.png)・[正断層](examples/normal.png)・[左横ずれ](examples/strike_left.png)・[右横ずれ](examples/strike_right.png)・[斜めずれ](examples/oblique.png)）。
+
+テスト（開発用）: `.venv/bin/pip install -r requirements-dev.txt && .venv/bin/python -m pytest tests`
+
+## 実装状況
+
+| Phase | 状態 |
+|-------|------|
+| 0 数式（走向・傾斜・すべり角 ⇄ モーメントテンソル ⇄ 節面・P/T軸） | 済（`beachball_decoder/fault.py`・obspy と照合） |
+| 1 震源球の描画 | 済（下半球・等面積投影。obspy の描画と画素で照合） |
+| 2 ブロック図・地表の初動マップ | 済（図の見やすさは改善の余地あり） |
+| 3 3D回転球・Webアプリ化 | 未着手 |
+| 4 公開カタログ連携 | 未着手 |
+| 5 画像入力 | 未着手 |
 
 ## 名称の検討
 
@@ -24,7 +49,7 @@
 
 - 球を断層面と補助面で4つの象限に分け、**押し（圧縮）= 黒**、**引き（膨張）= 白** で塗り分ける
 - 震源を中心とした球の **下半球** を平面に投影したもの（等面積投影＝シュミットネット、または等角投影）
-- 黒い象限の中心付近が圧縮軸（P軸）、白い象限の中心付近が引張軸（T軸）
+- 黒（押し）の象限の中心付近に **引張軸（T軸）**、白（引き）の象限の中心付近に **圧縮軸（P軸）** がある。名前と色が逆で紛らわしいので、このアプリでは図中に明示する
 
 ### 初学者がつまずく点
 
