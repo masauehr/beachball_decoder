@@ -18,6 +18,12 @@
 - 動作確認はローカルサーバーで実施: `python3 -m http.server -d web 8000`。
 - 未実施: スマホ実機での確認（レイアウトは CSS のみ・未確認）。
 
+## 気象庁の解説（Webアプリ・ノートブックに要約を掲載）
+気象庁「発震機構解」の解説ページ（https://www.data.jma.go.jp/eqev/data/mech/kaisetu/mechkaisetu.html ほか）を言い換えて要約し、出典リンクを付けた。Webアプリは末尾の「気象庁の解説より（要約）」、ノートブックは冒頭の2番目のセル。
+- 気象庁の図も、T軸は「押し」の領域・P軸は「引き」の領域にある（本アプリと同じ関係）。
+- 初動発震機構解は破壊開始点の機構、CMT解は断層運動全体を代表する解で、同じ地震でも異なることがある。
+- 原文は転載しない（言い換えと出典リンクのみ）。
+
 ## 実行（Python版）
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回のみ
