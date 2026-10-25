@@ -15,7 +15,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 .venv/bin/python -m beachball_decoder --mt 1.7 -0.3 -1.4 0.5 -0.2 0.9 -o out.png   # Mrr Mtt Mpp Mrt Mrp Mtp（GCMT/USGS形式）
 ```
 
-出力は1枚の画像: 震源球 / 節面Aが断層面の場合のブロック図 / 節面Bの場合のブロック図 / 地表の初動マップ / 解説文。
+出力は1枚の画像: 震源球 / **下半球を立体のお椀として斜めから見た図** / 節面Aが断層面の場合のブロック図 / 節面Bの場合のブロック図 / 地表の初動マップ / 解説文。
 例は [examples/](examples/)（[逆断層](examples/thrust.png)・[正断層](examples/normal.png)・[左横ずれ](examples/strike_left.png)・[右横ずれ](examples/strike_right.png)・[斜めずれ](examples/oblique.png)）。
 
 動作確認ノートブック: [notebooks/01_decoder_tour.ipynb](notebooks/01_decoder_tour.ipynb)
@@ -29,7 +29,7 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 |-------|------|
 | 0 数式（走向・傾斜・すべり角 ⇄ モーメントテンソル ⇄ 節面・P/T軸） | 済（`beachball_decoder/fault.py`・obspy と照合） |
 | 1 震源球の描画 | 済（下半球・等面積投影。obspy の描画と画素で照合） |
-| 2 ブロック図・地表の初動マップ | 済（図の見やすさは改善の余地あり） |
+| 2 ブロック図・地表の初動マップ・下半球の立体表示 | 済（ブロック図の見やすさは改善の余地あり） |
 | 3 3D回転球・Webアプリ化 | 未着手 |
 | 4 公開カタログ連携 | 未着手 |
 | 5 画像入力 | 未着手 |

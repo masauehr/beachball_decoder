@@ -79,3 +79,23 @@ def test_CLIは入力が不正ならエラー(capsys):
 def test_モーメントテンソル入力で出力できる(tmp_path):
     out = tmp_path / "mt.png"
     assert cli.main(["--mt", "1.7", "-0.3", "-1.4", "0.5", "-0.2", "0.9", "-o", str(out), "--dpi", "40"]) == 0
+
+
+@pytest.mark.parametrize("inside", [True, False])
+@pytest.mark.parametrize("sdr", [(30, 45, 90), (45, 90, 0)])
+def test_下半球の立体図が描ける(sdr, inside):
+    fig = plt.figure(figsize=(4, 4))
+    ax = fig.add_subplot(1, 1, 1, projection="3d")
+    render.draw_hemisphere(ax, fault.from_sdr(*sdr), elev=35.0, inside=inside)
+    fig.canvas.draw()
+    plt.close(fig)
+
+
+def test_立体図は見えている側の面だけを描く():
+    # お椀の内側をのぞくとき、見える面は下半球のおよそ半分以下になる
+    fig = plt.figure(figsize=(4, 4))
+    ax = fig.add_subplot(1, 1, 1, projection="3d")
+    render.draw_hemisphere(ax, fault.from_sdr(30, 45, 90), elev=38.0, inside=True)
+    coll = ax.collections[0]
+    plt.close(fig)
+    assert 0 < len(coll.get_facecolor()) < 144 * 45

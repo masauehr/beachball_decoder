@@ -81,6 +81,108 @@ def draw_beachball(ax, mech: Mechanism):
     ax.set_title("震源球（真下の半球を真上から見た図）", fontsize=12)
 
 
+# ---- 下半球の立体表示 -----------------------------------------------------
+
+def _sphere_xyz(az, takeoff, r=1.0):
+    """下半球の点（方位 az・離陸角 takeoff）の座標 (東, 北, 上)。下半球なので z は 0 以下。"""
+    return (r * np.sin(takeoff) * np.sin(az), r * np.sin(takeoff) * np.cos(az), -r * np.cos(takeoff))
+
+
+def _toward_viewer(elev, azim):
+    e, a = np.radians(elev), np.radians(azim)
+    return np.array([np.cos(e) * np.cos(a), np.cos(e) * np.sin(a), np.sin(e)])
+
+
+def draw_hemisphere(ax, mech: Mechanism, elev=38.0, azim=-90.0, inside=True):
+    """震源球の下半球を、お椀として斜めから見た立体図。
+
+    inside=True: 上から斜めにお椀の内側をのぞく見え方（平面の震源球を傾けた見え方に近い）。
+    inside=False: お椀を下から見て外側を見る見え方。
+    黒=押し、白=引き。赤線は節面、青丸は P軸・T軸。
+    """
+    toward = _toward_viewer(elev, azim)
+    na, nt = 144, 45
+    az_e = np.linspace(0, 2 * np.pi, na + 1)
+    th_e = np.linspace(0, np.pi / 2, nt + 1)
+    polys, colors = [], []
+    for j in range(nt):
+        for i in range(na):
+            a0, a1 = az_e[i], az_e[i + 1]
+            t0, t1 = th_e[j], th_e[j + 1]
+            ac, tc = (a0 + a1) / 2, (t0 + t1) / 2
+            radial = np.array(_sphere_xyz(ac, tc))
+            visible = np.dot(radial, toward) < 0 if inside else np.dot(radial, toward) > 0
+            if not visible:
+                continue
+            pts = [_sphere_xyz(a0, t0), _sphere_xyz(a1, t0), _sphere_xyz(a1, t1), _sphere_xyz(a0, t1)]
+            polys.append(np.array(pts))
+            # 面の向きで明暗をつけて、球面のふくらみが見えるようにする（白は地の白と区別できる薄い灰色）
+            light = 0.78 + 0.22 * abs(np.dot(radial, toward))
+            base = 0.12 if _pressure(mech.moment, ac, tc) > 0 else 0.96
+            g = base * light if base < 0.5 else 1.0 - (1.0 - base) - 0.2 * (1 - light) * 2
+            colors.append((g, g, g))
+    ax.computed_zorder = False
+    ax.add_collection3d(Poly3DCollection(polys, facecolors=colors, edgecolors=colors, linewidths=0.4, zorder=1))
+    # 経線・緯線（球面の曲がりを見せる補助線）
+    r_grid = 0.997 if inside else 1.003
+    tt = np.linspace(0, np.pi / 2, 60)
+    aa = np.linspace(0, 2 * np.pi, 200)
+    grid_lines = [(np.full_like(tt, a), tt) for a in np.radians(np.arange(0, 360, 30))]
+    grid_lines += [(aa, np.full_like(aa, t)) for t in np.radians((15, 30, 45, 60, 75))]
+    for a_arr, t_arr in grid_lines:
+        xyz = np.stack(_sphere_xyz(a_arr, t_arr, r_grid), axis=1)
+        vis = (xyz @ toward < 0) if inside else (xyz @ toward > 0)
+        idx = np.where(vis)[0]
+        for seg in np.split(idx, np.where(np.diff(idx) > 1)[0] + 1) if len(idx) else []:
+            ax.plot(xyz[seg, 0], xyz[seg, 1], xyz[seg, 2], color="#888888", lw=0.5, alpha=0.7, zorder=3)
+    # 縁（赤道）
+    t = np.linspace(0, 2 * np.pi, 200)
+    ax.plot(np.sin(t), np.cos(t), 0 * t, color="k", lw=2.2, zorder=5)
+    # 節面（大円）の、見えている部分
+    from .fault import _sdr_to_nd
+
+    r_line = 0.995 if inside else 1.005
+    for plane in (mech.plane_a, mech.plane_b):
+        n_ned, _ = _sdr_to_nd(*plane)
+        u = np.cross(n_ned, [0, 0, 1.0])
+        if np.linalg.norm(u) < 1e-9:
+            u = np.array([1.0, 0, 0])
+        u /= np.linalg.norm(u)
+        v = np.cross(n_ned, u)
+        tt = np.linspace(0, 2 * np.pi, 721)
+        g = np.outer(np.cos(tt), u) + np.outer(np.sin(tt), v)  # NED
+        g = g[g[:, 2] >= -1e-9]  # 下向きの半分
+        if len(g) == 0:
+            continue
+        enu = np.stack([g[:, 1], g[:, 0], -g[:, 2]], axis=1) * r_line
+        vis = (enu @ toward < 0) if inside else (enu @ toward > 0)
+        # 連続した見える区間ごとに線を引く（大円は始点で途切れるので隙間は無視してよい）
+        idx = np.where(vis)[0]
+        if len(idx) == 0:
+            continue
+        breaks = np.where(np.diff(idx) > 1)[0] + 1
+        for seg in np.split(idx, breaks):
+            ax.plot(enu[seg, 0], enu[seg, 1], enu[seg, 2], color="#c0392b", lw=3, zorder=6)
+    # P軸・T軸
+    for name, (trend, plunge), fc in (("P", mech.p_axis, "white"), ("T", mech.t_axis, "#222222")):
+        pos = np.array(_sphere_xyz(np.radians(trend), np.radians(90.0 - plunge))) * (0.99 if inside else 1.01)
+        if (pos @ toward < 0) == inside:
+            ax.scatter(*pos, s=420, c=fc, edgecolors="#2e86c1", linewidths=2.5, zorder=8, depthshade=False)
+            ax.text(*pos, name, color="#2e86c1", ha="center", va="center", fontsize=10, fontweight="bold",
+                    zorder=9)
+    # 方位（縁に沿って）
+    for label, (x, y) in (("N", (0, 1.2)), ("E", (1.2, 0)), ("S", (0, -1.2)), ("W", (-1.2, 0))):
+        ax.text(x, y, 0.1, label, ha="center", va="center", fontsize=12, fontweight="bold", zorder=9)
+    ax.set_xlim(-1.05, 1.05)
+    ax.set_ylim(-1.05, 1.05)
+    ax.set_zlim(-1.0, 0.25)
+    ax.set_box_aspect((1, 1, 0.6), zoom=1.2)
+    ax.view_init(elev=elev, azim=azim)
+    ax.set_axis_off()
+    ax.set_title("震源球を立体で見ると（お椀を斜め上からのぞく）" if inside else "震源球を立体で見ると（お椀を下から見る）",
+                 fontsize=12)
+
+
 # ---- 断層ブロック図 -------------------------------------------------------
 
 def _clip(poly, normal, offset):
@@ -292,14 +394,16 @@ def build_summary(mech: Mechanism):
 def render_decoded(mech: Mechanism, path, dpi=150, title=None):
     """震源球と、それを直感的に読み解くための図をまとめて1枚の画像に書き出す。"""
     setup_font()
-    fig = plt.figure(figsize=(18, 10.5), facecolor="white")
-    gs = fig.add_gridspec(2, 3, height_ratios=[1.15, 1], hspace=0.08, wspace=0.05, left=0.02, right=0.98,
+    fig = plt.figure(figsize=(22, 10.5), facecolor="white")
+    gs = fig.add_gridspec(2, 4, height_ratios=[1.15, 1], hspace=0.08, wspace=0.05, left=0.02, right=0.98,
                           top=0.9, bottom=0.03)
     ax_ball = fig.add_subplot(gs[0, 0])
     draw_beachball(ax_ball, mech)
-    ax_a = fig.add_subplot(gs[0, 1], projection="3d")
+    ax_bowl = fig.add_subplot(gs[0, 1], projection="3d")
+    draw_hemisphere(ax_bowl, mech)
+    ax_a = fig.add_subplot(gs[0, 2], projection="3d")
     draw_block(ax_a, mech.plane_a, f"節面Aが断層面なら（{mech.fault_type[0]}）\n橙=上盤の動き / 青=下盤の動き")
-    ax_b = fig.add_subplot(gs[0, 2], projection="3d")
+    ax_b = fig.add_subplot(gs[0, 3], projection="3d")
     draw_block(ax_b, mech.plane_b, f"節面Bが断層面なら（{mech.fault_type_b[0]}）\n橙=上盤の動き / 青=下盤の動き")
     ax_map = fig.add_subplot(gs[1, 0])
     draw_surface_map(ax_map, mech)
