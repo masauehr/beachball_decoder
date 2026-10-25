@@ -9,6 +9,8 @@
 ## 使い方
 
 ### ブラウザ版（ドラッグで回せる）
+公開ページ: https://masauehr.github.io/beachball_decoder/
+
 [web/index.html](web/index.html) をブラウザで開く（サーバー不要・外部ライブラリなし）。走向・傾斜・すべり角のスライダーで、平らな震源球・お椀・球面・断層ブロック（節面A/B）・地表の初動マップが連動して変わる。3Dの図はドラッグ（タッチ・矢印キーも可）で回転。詳しくは [web/README.md](web/README.md)。
 
 ### Python 版（画像・ノートブック）

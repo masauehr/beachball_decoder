@@ -9,13 +9,14 @@
 - テスト52件（obspy の補助面・震源球の黒白と照合）。
 
 ## ブラウザ版（`web/`）
+- 公開URL: https://masauehr.github.io/beachball_decoder/（GitHub Pages。`.github/workflows/pages.yml` が `web/` を main への push で自動デプロイ。2026-10-25公開）
 - `web/index.html` を開くだけで動く（Vanilla JS + Canvas 2D、外部ライブラリ・ビルド不要。Three.js は使わず自前の直交投影）。
 - 画面: スライダー（走向・傾斜・すべり角）/ 代表例 / モーメントテンソル入力 / ①平面 ②お椀 ③球面 ④⑤ブロック図A・B ⑥地表初動マップ / 数値と読み方。②③は視点が連動、④⑤は個別にドラッグ。URL `#s=30&d=45&r=90` で共有できる。
 - 計算は `web/js/fault.js`（Python版の移植）。`tools/make_golden.py` が Python版の結果を `web/test/golden.json` に書き出し、`node --test web/test` で照合（7件）。
 - Pythonの描画と同様、お椀・球面は「見える側の面だけ」を描く（奥行きの並べ替え不要）。ブロック図だけ面の重心の奥行きで並べ替える。
 - 落とし穴: 大円の下半分を点列にするとき、始点(t=0)と終点(t=2π)が両方「下向き」と判定されて弦が引かれた。v を下向き成分が正になる向きにそろえ、t∈[0,π] で打ち切って解決。
 - 動作確認はローカルサーバーで実施: `python3 -m http.server -d web 8000`。
-- 未実施: GitHub Pages での公開、スマホ実機での確認（レイアウトは CSS のみ・未確認）。
+- 未実施: スマホ実機での確認（レイアウトは CSS のみ・未確認）。
 
 ## 実行（Python版）
 ```bash
@@ -54,6 +55,5 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # 初回の
 
 ## 未決・次にやること
 - ブロック図の見やすさ（ラベルが矢印やブロックに重なる、向きの見え方）
-- GitHub Pages で `web/` を公開するか（公開設定の変更なので要確認）
 - Phase 4: 公開カタログ連携 / Phase 5: 画像入力（実装価値を要判断）
 - 対象読者・投影法の既定値・用語表記の統一
